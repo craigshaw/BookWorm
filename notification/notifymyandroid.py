@@ -2,11 +2,10 @@ from urllib import urlencode
 import urllib2
 import logging
 
-notificationKey = "3709f6800c75e40c3a02a5c493015868c97af8e9534d6564"
 notificationRoot = "https://www.notifymyandroid.com/publicapi/notify"
 
 class NotifyMyAndroid(object):
-	def __init__(self,key=notificationKey):
+	def __init__(self,key):
 		self.key = key
 		self.logger = logging.getLogger(__name__)
 

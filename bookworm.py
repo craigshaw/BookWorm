@@ -4,13 +4,17 @@
 	BookWorm application.
 """
 
-from model.stores.amazon import AmazonStore
-from notification.notifymyandroid import NotifyMyAndroid
 from atexit import register
 from apscheduler.scheduler import Scheduler
 import logging
 import pickle
 import os
+import argparse
+
+from model.stores.amazon import AmazonStore
+from notification.notifymyandroid import NotifyMyAndroid
+
+args = None
 
 class Application(object):
 	def __init__(self):
@@ -21,7 +25,7 @@ class Application(object):
 		self.scheduler.add_interval_job(self.process_book_list, seconds=30)
 
 		self.store = AmazonStore()
-		self.notifier = NotifyMyAndroid()
+		self.notifier = NotifyMyAndroid(args.key)
 
 		self.load()
 
@@ -111,8 +115,18 @@ def insert_new_book(application):
 			print('Resolved book: {0}'.format(book))
 			application.register_new_book(book)
 
+def crack_args():
+	parser = argparse.ArgumentParser(description='Bookworm book monitor and notifier')
+	parser.add_argument('-k', dest='key', help='Notifymyandroid key')
+	parser.add_argument('-p', dest='port', default=15009, type=int, help='Administrative port')
+	parser.add_argument('-d', dest='daemonise', action='store_true', help='Run as daemon')
+
+	return parser.parse_args()
+
 if __name__ == '__main__':
 	try:
+		args = crack_args()
+		print(args)
 		main()
 	except (KeyboardInterrupt, SystemExit):
 		pass
