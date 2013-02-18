@@ -11,10 +11,10 @@ import pickle
 import os
 import argparse
 
+import bookworm
+
 from model.stores.amazon import AmazonStore
 from notification.notifymyandroid import NotifyMyAndroid
-
-args = None
 
 class Application(object):
 	def __init__(self):
@@ -25,7 +25,7 @@ class Application(object):
 		self.scheduler.add_interval_job(self.process_book_list, seconds=30)
 
 		self.store = AmazonStore()
-		self.notifier = NotifyMyAndroid(args.key)
+		self.notifier = NotifyMyAndroid(bookworm.NOTIFICATION_KEY)
 
 		self.load()
 
@@ -61,12 +61,12 @@ class Application(object):
 			if latestPrice != None and latestPrice != book.current_price:
 				if latestPrice < book.current_price:
 					self.logger.debug('Found a lower price!')
-					self.notifier.send_notification(self.build_notification_message(latestPrice, book.isbn, book.title), 'Price Update')
+					self.notifier.send_notification(self.build_notification_message(latestPrice, book.title, self.store.get_product_url(book.isbn)), 'Price Update')
 
 				book.current_price = latestPrice
 
-	def build_notification_message(self, price, isbn, title):
-		return (u'{0} is now £{1}\nhttp://www.amazon.co.uk/gp/product/{2}'.format(title, price, isbn))
+	def build_notification_message(self, price, title, productUrl):
+		return (u'{0} is now £{1}\n{2}'.format(title, price, productUrl))
 
 	def get_resolver(self):
 		return self.store.get_book_details
@@ -116,17 +116,20 @@ def insert_new_book(application):
 			application.register_new_book(book)
 
 def crack_args():
-	parser = argparse.ArgumentParser(description='Bookworm book monitor and notifier')
+	parser = argparse.ArgumentParser(description='Bookworm book price monitor and notifier')
 	parser.add_argument('-k', dest='key', help='Notifymyandroid key')
 	parser.add_argument('-p', dest='port', default=15009, type=int, help='Administrative port')
 	parser.add_argument('-d', dest='daemonise', action='store_true', help='Run as daemon')
 
-	return parser.parse_args()
+	args = parser.parse_args()
+
+	bookworm.NOTIFICATION_KEY = args.key
+	bookworm.ADMIN_PORT = args.port
+	bookworm.RUN_AS_DAEMON = args.daemonise
 
 if __name__ == '__main__':
 	try:
-		args = crack_args()
-		print(args)
+		crack_args()
 		main()
 	except (KeyboardInterrupt, SystemExit):
 		pass
